@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
-<title>Vaktalálat — Blind Spin</title>
+<title>WrongHitster</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,300;9..144,500;9..144,600&family=Work+Sans:wght@400;500;600&display=swap" rel="stylesheet">
@@ -144,51 +144,50 @@
 
   <!-- SETUP SCREEN -->
   <div id="screen-setup">
-    <p class="eyebrow">Vaktalálat · Blind Spin</p>
-    <h1>Connect Spotify</h1>
-    <p class="desc">A blind-listening companion for your card game. Scans a card's Spotify QR and plays the track without ever showing the name.</p>
+    <p class="eyebrow">Hitster, csak béna számokkal</p>
+    <h1>Kapcsolódj Spotifyal</h1>
 
     <label for="clientId">Spotify Client ID</label>
     <input type="text" id="clientId" placeholder="e.g. 8f3a...">
 
     <div class="redirect-box">
-      <b>Redirect URI to whitelist:</b>
+      <b>Redirect URI az app-ban:</b>
       <span id="redirectUriDisplay"></span>
     </div>
 
     <button class="btn-primary" id="btnConnect">Save &amp; connect to Spotify</button>
 
     <details>
-      <summary>Setup instructions</summary>
+      <summary>Hogyan</summary>
       <p>
-        1. Go to the <a href="https://developer.spotify.com/dashboard" target="_blank" style="color:var(--brass)">Spotify Developer Dashboard</a> and create an app (any name works).<br>
-        2. In the app's settings, add the redirect URI shown above under "Redirect URIs".<br>
-        3. Copy the Client ID into the field above.<br>
-        4. You need Spotify <b>Premium</b> for playback to work.
+        1. Menj a <a href="https://developer.spotify.com/dashboard" target="_blank" style="color:var(--brass)">Spotify Developer Dashboard-ra</a> és készíts egy app-ot (mindegy a név).<br>
+        2. Az app beállításokban állítsd be fentről a "Redirect URI"t.<br>
+        3. Másold a Client ID-t felüre az appból<br>
+        4. Spotify <b>Premium</b> kell.
       </p>
     </details>
   </div>
 
   <!-- SCANNER SCREEN -->
   <div id="screen-scan" class="hidden">
-    <p class="eyebrow">Ready</p>
-    <h1>Scan a card</h1>
-    <p class="desc">Point the camera at the card's QR code.</p>
+    <p class="eyebrow">Kész</p>
+    <h1>Scan</h1>
+    <p class="desc">Keresd a QR-t.</p>
     <div id="reader"></div>
-    <button class="btn-secondary" id="btnStopScan">Stop camera</button>
-    <div class="status-line"><span class="dot ok"></span><span id="deviceStatus">Connecting player…</span></div>
+    <button class="btn-secondary" id="btnStopScan">Stop</button>
+    <div class="status-line"><span class="dot ok"></span><span id="deviceStatus">Kapcsolódás…</span></div>
   </div>
 
   <!-- PLAYER SCREEN -->
   <div id="screen-player" class="hidden">
-    <p class="eyebrow">Now spinning</p>
+    <p class="eyebrow">Megy</p>
     <h1 style="visibility:hidden;">·</h1>
     <div class="vinyl-wrap">
       <div class="vinyl" id="vinyl"></div>
     </div>
-    <div class="player-status" id="playerStatus">Playing…</div>
-    <button class="btn-primary" id="btnToggle">Pause</button>
-    <button class="btn-secondary scan-again" id="btnScanNext">Scan next card</button>
+    <div class="player-status" id="playerStatus">Lejátszás…</div>
+    <button class="btn-primary" id="btnToggle">Szünet</button>
+    <button class="btn-secondary scan-again" id="btnScanNext">Következő</button>
   </div>
 
 </div>
