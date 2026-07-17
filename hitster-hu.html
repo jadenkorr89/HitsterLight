@@ -1,0 +1,485 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Vaktalálat — Blind Spin</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,300;9..144,500;9..144,600&family=Work+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://sdk.scdn.co/spotify-player.js"></script>
+<script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+<style>
+  :root{
+    --bg:#16141a;
+    --surface:#211e29;
+    --surface-2:#2a2632;
+    --brass:#c9a24b;
+    --label-red:#a8433a;
+    --ink:#f1ede4;
+    --muted:#8a8496;
+  }
+  *{box-sizing:border-box;}
+  html,body{
+    margin:0; height:100%;
+    background:radial-gradient(ellipse at 50% -10%, #241f2c 0%, var(--bg) 55%);
+    color:var(--ink);
+    font-family:'Work Sans', sans-serif;
+    -webkit-font-smoothing:antialiased;
+  }
+  body{
+    display:flex; align-items:center; justify-content:center;
+    min-height:100vh; padding:24px;
+  }
+  .card{
+    width:100%; max-width:420px;
+    background:var(--surface);
+    border:1px solid #322d3c;
+    border-radius:20px;
+    padding:32px 28px;
+    box-shadow:0 30px 60px -20px rgba(0,0,0,0.6);
+  }
+  h1{
+    font-family:'Fraunces', serif;
+    font-weight:600;
+    font-size:1.7rem;
+    letter-spacing:0.01em;
+    margin:0 0 4px;
+    color:var(--ink);
+  }
+  .eyebrow{
+    font-size:0.72rem;
+    letter-spacing:0.16em;
+    text-transform:uppercase;
+    color:var(--brass);
+    margin:0 0 14px;
+  }
+  p.desc{color:var(--muted); font-size:0.92rem; line-height:1.5; margin:0 0 22px;}
+  label{
+    display:block; font-size:0.78rem; color:var(--muted);
+    margin-bottom:6px; letter-spacing:0.02em;
+  }
+  input[type=text]{
+    width:100%; padding:12px 14px; margin-bottom:16px;
+    background:var(--surface-2); border:1px solid #3a3446; border-radius:10px;
+    color:var(--ink); font-size:0.95rem; font-family:'Work Sans', sans-serif;
+  }
+  input[type=text]:focus{outline:2px solid var(--brass); outline-offset:1px;}
+  .redirect-box{
+    background:var(--surface-2); border:1px dashed #4a4356; border-radius:10px;
+    padding:10px 12px; font-size:0.78rem; color:var(--muted);
+    word-break:break-all; margin-bottom:18px;
+  }
+  .redirect-box b{color:var(--ink); display:block; margin-bottom:3px; font-weight:600;}
+  button{
+    font-family:'Work Sans', sans-serif; font-weight:600; font-size:0.95rem;
+    padding:13px 20px; border-radius:12px; border:none; cursor:pointer;
+    width:100%; letter-spacing:0.01em; transition:transform .12s ease, opacity .12s ease;
+  }
+  button:active{transform:scale(0.98);}
+  button:disabled{opacity:0.45; cursor:not-allowed;}
+  .btn-primary{background:var(--brass); color:#1c1712;}
+  .btn-secondary{background:transparent; color:var(--ink); border:1px solid #423b4d;}
+  .btn-danger-ghost{background:transparent; color:var(--muted); border:1px solid #3a3446; margin-top:10px;}
+  .hidden{display:none !important;}
+  .status-line{
+    display:flex; align-items:center; gap:8px; font-size:0.8rem; color:var(--muted);
+    margin-top:14px; justify-content:center;
+  }
+  .dot{width:7px; height:7px; border-radius:50%; background:var(--muted);}
+  .dot.ok{background:#5fae6f;}
+  .dot.warn{background:var(--label-red);}
+
+  #reader{border-radius:14px; overflow:hidden; margin-bottom:16px;}
+
+  /* --- Vinyl signature element --- */
+  .vinyl-wrap{
+    display:flex; justify-content:center; align-items:center;
+    margin:6px 0 28px;
+  }
+  .vinyl{
+    width:180px; height:180px; border-radius:50%;
+    background:
+      repeating-radial-gradient(circle at center,
+        #0d0c10 0px, #0d0c10 2px,
+        #17151b 2px, #17151b 4px);
+    position:relative;
+    box-shadow:0 18px 40px -12px rgba(0,0,0,0.7), inset 0 0 0 2px #060509;
+    animation:spin 3.2s linear infinite;
+    animation-play-state:paused;
+  }
+  .vinyl.spinning{animation-play-state:running;}
+  .vinyl::before{
+    content:'';
+    position:absolute; inset:0; margin:auto;
+    width:56px; height:56px; border-radius:50%;
+    background:var(--label-red);
+    box-shadow:0 0 0 2px #1c1712, inset 0 0 12px rgba(0,0,0,0.35);
+  }
+  .vinyl::after{
+    content:'';
+    position:absolute; inset:0; margin:auto;
+    width:8px; height:8px; border-radius:50%;
+    background:#1c1712;
+  }
+  @keyframes spin{ from{transform:rotate(0deg);} to{transform:rotate(360deg);} }
+  @media (prefers-reduced-motion: reduce){
+    .vinyl{animation:none;}
+  }
+
+  .player-status{
+    text-align:center; font-size:0.85rem; color:var(--muted);
+    margin-bottom:22px; min-height:1.2em;
+  }
+  .scan-again{margin-top:12px;}
+  details{margin-top:6px;}
+  summary{cursor:pointer; color:var(--muted); font-size:0.8rem; margin-bottom:10px;}
+  details p{color:var(--muted); font-size:0.82rem; line-height:1.6;}
+  code{background:var(--surface-2); padding:2px 5px; border-radius:5px; font-size:0.82em;}
+</style>
+</head>
+<body>
+
+<div class="card">
+
+  <!-- SETUP SCREEN -->
+  <div id="screen-setup">
+    <p class="eyebrow">Vaktalálat · Blind Spin</p>
+    <h1>Connect Spotify</h1>
+    <p class="desc">A blind-listening companion for your card game. Scans a card's Spotify QR and plays the track without ever showing the name.</p>
+
+    <label for="clientId">Spotify Client ID</label>
+    <input type="text" id="clientId" placeholder="e.g. 8f3a...">
+
+    <div class="redirect-box">
+      <b>Redirect URI to whitelist:</b>
+      <span id="redirectUriDisplay"></span>
+    </div>
+
+    <button class="btn-primary" id="btnConnect">Save &amp; connect to Spotify</button>
+
+    <details>
+      <summary>Setup instructions</summary>
+      <p>
+        1. Go to the <a href="https://developer.spotify.com/dashboard" target="_blank" style="color:var(--brass)">Spotify Developer Dashboard</a> and create an app (any name works).<br>
+        2. In the app's settings, add the redirect URI shown above under "Redirect URIs".<br>
+        3. Copy the Client ID into the field above.<br>
+        4. You need Spotify <b>Premium</b> for playback to work.
+      </p>
+    </details>
+  </div>
+
+  <!-- SCANNER SCREEN -->
+  <div id="screen-scan" class="hidden">
+    <p class="eyebrow">Ready</p>
+    <h1>Scan a card</h1>
+    <p class="desc">Point the camera at the card's QR code.</p>
+    <div id="reader"></div>
+    <button class="btn-secondary" id="btnStopScan">Stop camera</button>
+    <div class="status-line"><span class="dot ok"></span><span id="deviceStatus">Connecting player…</span></div>
+  </div>
+
+  <!-- PLAYER SCREEN -->
+  <div id="screen-player" class="hidden">
+    <p class="eyebrow">Now spinning</p>
+    <h1 style="visibility:hidden;">·</h1>
+    <div class="vinyl-wrap">
+      <div class="vinyl" id="vinyl"></div>
+    </div>
+    <div class="player-status" id="playerStatus">Playing…</div>
+    <button class="btn-primary" id="btnToggle">Pause</button>
+    <button class="btn-secondary scan-again" id="btnScanNext">Scan next card</button>
+  </div>
+
+</div>
+
+<script>
+/* ---------------- Config & storage ---------------- */
+const REDIRECT_URI = window.location.origin + window.location.pathname;
+document.getElementById('redirectUriDisplay').textContent = REDIRECT_URI;
+
+const LS_CLIENT_ID = 'hitster_client_id';
+const LS_ACCESS_TOKEN = 'hitster_access_token';
+const LS_REFRESH_TOKEN = 'hitster_refresh_token';
+const LS_EXPIRES_AT = 'hitster_expires_at';
+const SS_VERIFIER = 'hitster_code_verifier';
+
+const SCOPES = 'streaming user-read-email user-read-private user-modify-playback-state user-read-playback-state';
+
+/* ---------------- Screen helpers ---------------- */
+function show(id){
+  ['screen-setup','screen-scan','screen-player'].forEach(s=>{
+    document.getElementById(s).classList.toggle('hidden', s!==id);
+  });
+}
+
+/* ---------------- PKCE helpers ---------------- */
+function randomString(len){
+  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+  let out = '';
+  const arr = new Uint8Array(len);
+  crypto.getRandomValues(arr);
+  for(let i=0;i<len;i++) out += chars[arr[i] % chars.length];
+  return out;
+}
+async function sha256(plain){
+  const data = new TextEncoder().encode(plain);
+  return await crypto.subtle.digest('SHA-256', data);
+}
+function base64UrlEncode(buffer){
+  let str = '';
+  const bytes = new Uint8Array(buffer);
+  for(let i=0;i<bytes.byteLength;i++) str += String.fromCharCode(bytes[i]);
+  return btoa(str).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');
+}
+
+async function startAuth(){
+  const clientId = document.getElementById('clientId').value.trim();
+  if(!clientId){ alert('Enter your Spotify Client ID first.'); return; }
+  localStorage.setItem(LS_CLIENT_ID, clientId);
+
+  const verifier = randomString(64);
+  sessionStorage.setItem(SS_VERIFIER, verifier);
+  const challenge = base64UrlEncode(await sha256(verifier));
+
+  const params = new URLSearchParams({
+    response_type: 'code',
+    client_id: clientId,
+    scope: SCOPES,
+    code_challenge_method: 'S256',
+    code_challenge: challenge,
+    redirect_uri: REDIRECT_URI
+  });
+  window.location.href = 'https://accounts.spotify.com/authorize?' + params.toString();
+}
+
+async function exchangeCodeForToken(code){
+  const clientId = localStorage.getItem(LS_CLIENT_ID);
+  const verifier = sessionStorage.getItem(SS_VERIFIER);
+  const body = new URLSearchParams({
+    grant_type: 'authorization_code',
+    code,
+    redirect_uri: REDIRECT_URI,
+    client_id: clientId,
+    code_verifier: verifier
+  });
+  const res = await fetch('https://accounts.spotify.com/api/token', {
+    method: 'POST',
+    headers: {'Content-Type':'application/x-www-form-urlencoded'},
+    body
+  });
+  const data = await res.json();
+  if(data.access_token){
+    saveTokens(data);
+    return true;
+  }
+  console.error('Token exchange failed', data);
+  return false;
+}
+
+function saveTokens(data){
+  localStorage.setItem(LS_ACCESS_TOKEN, data.access_token);
+  if(data.refresh_token) localStorage.setItem(LS_REFRESH_TOKEN, data.refresh_token);
+  const expiresAt = Date.now() + (data.expires_in*1000) - 30000; // 30s buffer
+  localStorage.setItem(LS_EXPIRES_AT, String(expiresAt));
+}
+
+async function refreshAccessToken(){
+  const clientId = localStorage.getItem(LS_CLIENT_ID);
+  const refreshToken = localStorage.getItem(LS_REFRESH_TOKEN);
+  if(!refreshToken) return false;
+  const body = new URLSearchParams({
+    grant_type: 'refresh_token',
+    refresh_token: refreshToken,
+    client_id: clientId
+  });
+  const res = await fetch('https://accounts.spotify.com/api/token', {
+    method: 'POST',
+    headers: {'Content-Type':'application/x-www-form-urlencoded'},
+    body
+  });
+  const data = await res.json();
+  if(data.access_token){
+    saveTokens(data);
+    return true;
+  }
+  return false;
+}
+
+async function getValidToken(){
+  const expiresAt = Number(localStorage.getItem(LS_EXPIRES_AT) || 0);
+  if(Date.now() > expiresAt){
+    const ok = await refreshAccessToken();
+    if(!ok) return null;
+  }
+  return localStorage.getItem(LS_ACCESS_TOKEN);
+}
+
+/* ---------------- Spotify Web Playback SDK ---------------- */
+let player = null;
+let deviceId = null;
+
+window.onSpotifyWebPlaybackSDKReady = () => {
+  // Player is created once we have a token; see initPlayer()
+};
+
+async function initPlayer(){
+  const token = await getValidToken();
+  if(!token) return;
+
+  player = new Spotify.Player({
+    name: 'Vaktalálat Blind Spin',
+    getOAuthToken: cb => { getValidToken().then(t => cb(t)); },
+    volume: 0.9
+  });
+
+  player.addListener('ready', ({device_id}) => {
+    deviceId = device_id;
+    document.getElementById('deviceStatus').textContent = 'Player ready — scan a card';
+  });
+  player.addListener('not_ready', () => {
+    document.getElementById('deviceStatus').textContent = 'Player disconnected';
+  });
+  player.addListener('initialization_error', ({message}) => console.error(message));
+  player.addListener('authentication_error', ({message}) => console.error(message));
+  player.addListener('account_error', ({message}) => {
+    console.error(message);
+    document.getElementById('deviceStatus').textContent = 'Spotify Premium is required for playback.';
+  });
+
+  player.addListener('player_state_changed', state => {
+    if(!state) return;
+    const vinyl = document.getElementById('vinyl');
+    const statusEl = document.getElementById('playerStatus');
+    const toggleBtn = document.getElementById('btnToggle');
+    if(state.paused){
+      vinyl.classList.remove('spinning');
+      statusEl.textContent = 'Paused';
+      toggleBtn.textContent = 'Resume';
+    } else {
+      vinyl.classList.add('spinning');
+      statusEl.textContent = 'Playing…';
+      toggleBtn.textContent = 'Pause';
+    }
+  });
+
+  await player.connect();
+}
+
+/* ---------------- Playback control ---------------- */
+function extractTrackId(text){
+  // Handles: spotify:track:ID  |  https://open.spotify.com/track/ID?...
+  let m = text.match(/spotify:track:([a-zA-Z0-9]+)/);
+  if(m) return m[1];
+  m = text.match(/open\.spotify\.com\/track\/([a-zA-Z0-9]+)/);
+  if(m) return m[1];
+  return null;
+}
+
+async function playTrack(trackId){
+  const token = await getValidToken();
+  if(!token || !deviceId) return;
+  await fetch(`https://api.spotify.com/v1/me/player/play?device_id=${deviceId}`, {
+    method: 'PUT',
+    headers: {
+      'Authorization': 'Bearer ' + token,
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({ uris: [`spotify:track:${trackId}`] })
+  });
+  document.getElementById('vinyl').classList.add('spinning');
+  document.getElementById('playerStatus').textContent = 'Playing…';
+  document.getElementById('btnToggle').textContent = 'Pause';
+  show('screen-player');
+}
+
+async function togglePlayback(){
+  const token = await getValidToken();
+  if(!token || !deviceId) return;
+  const btn = document.getElementById('btnToggle');
+  const isPausing = btn.textContent.trim() === 'Pause';
+  const endpoint = isPausing ? 'pause' : 'play';
+  await fetch(`https://api.spotify.com/v1/me/player/${endpoint}?device_id=${deviceId}`, {
+    method: 'PUT',
+    headers: { 'Authorization': 'Bearer ' + token }
+  });
+  // UI updates via player_state_changed listener
+}
+
+/* ---------------- QR scanning ---------------- */
+let html5QrCode = null;
+
+function startScanner(){
+  show('screen-scan');
+  html5QrCode = new Html5Qrcode('reader');
+  html5QrCode.start(
+    { facingMode: 'environment' },
+    { fps: 10, qrbox: 220 },
+    (decodedText) => {
+      const trackId = extractTrackId(decodedText);
+      if(trackId){
+        stopScanner();
+        playTrack(trackId);
+      }
+    },
+    () => {} // ignore per-frame scan failures
+  ).catch(err => {
+    console.error('Camera start failed', err);
+    document.getElementById('deviceStatus').textContent = 'Camera access failed — check permissions.';
+  });
+}
+
+function stopScanner(){
+  if(html5QrCode){
+    html5QrCode.stop().catch(()=>{});
+    html5QrCode.clear();
+    html5QrCode = null;
+  }
+}
+
+/* ---------------- Wiring ---------------- */
+document.getElementById('btnConnect').addEventListener('click', startAuth);
+document.getElementById('btnStopScan').addEventListener('click', () => { stopScanner(); show('screen-setup'); });
+document.getElementById('btnToggle').addEventListener('click', togglePlayback);
+document.getElementById('btnScanNext').addEventListener('click', () => {
+  document.getElementById('vinyl').classList.remove('spinning');
+  startScanner();
+});
+
+/* ---------------- Boot sequence ---------------- */
+(async function boot(){
+  const storedClientId = localStorage.getItem(LS_CLIENT_ID);
+  if(storedClientId) document.getElementById('clientId').value = storedClientId;
+
+  const urlParams = new URLSearchParams(window.location.search);
+  const code = urlParams.get('code');
+
+  if(code){
+    window.history.replaceState({}, document.title, window.location.pathname);
+    const ok = await exchangeCodeForToken(code);
+    if(ok){
+      await bootPlayerFlow();
+      return;
+    } else {
+      show('screen-setup');
+      return;
+    }
+  }
+
+  const token = await getValidToken();
+  if(token){
+    await bootPlayerFlow();
+  } else {
+    show('screen-setup');
+  }
+})();
+
+async function bootPlayerFlow(){
+  show('screen-scan');
+  document.getElementById('deviceStatus').textContent = 'Connecting player…';
+  await initPlayer();
+  startScanner();
+}
+</script>
+</body>
+</html>
