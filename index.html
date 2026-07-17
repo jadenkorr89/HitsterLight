@@ -324,6 +324,9 @@ window.onSpotifyWebPlaybackSDKReady = () => {
   resolveSdkReady();
 };
 
+let resolveDeviceReady;
+const deviceReady = new Promise(resolve => { resolveDeviceReady = resolve; });
+
 async function initPlayer(){
   const token = await getValidToken();
   if(!token) return;
@@ -339,6 +342,7 @@ async function initPlayer(){
   player.addListener('ready', ({device_id}) => {
     deviceId = device_id;
     document.getElementById('deviceStatus').textContent = 'Player ready — scan a card';
+    resolveDeviceReady();
   });
   player.addListener('not_ready', () => {
     document.getElementById('deviceStatus').textContent = 'Player disconnected';
@@ -367,6 +371,7 @@ async function initPlayer(){
   });
 
   await player.connect();
+  await deviceReady; // wait for the 'ready' event so deviceId is actually set before scanning starts
 }
 
 /* ---------------- Playback control ---------------- */
@@ -381,8 +386,17 @@ function extractTrackId(text){
 
 async function playTrack(trackId){
   const token = await getValidToken();
-  if(!token || !deviceId) return;
-  await fetch(`https://api.spotify.com/v1/me/player/play?device_id=${deviceId}`, {
+  if(!token){
+    document.getElementById('deviceStatus').textContent = 'Not connected to Spotify — reload and reconnect.';
+    show('screen-scan');
+    return;
+  }
+  if(!deviceId){
+    document.getElementById('deviceStatus').textContent = 'Player not ready yet — wait a moment and scan again.';
+    show('screen-scan');
+    return;
+  }
+  const res = await fetch(`https://api.spotify.com/v1/me/player/play?device_id=${deviceId}`, {
     method: 'PUT',
     headers: {
       'Authorization': 'Bearer ' + token,
@@ -390,6 +404,16 @@ async function playTrack(trackId){
     },
     body: JSON.stringify({ uris: [`spotify:track:${trackId}`] })
   });
+  if(!res.ok){
+    const errText = await res.text().catch(()=> '');
+    console.error('Play request failed', res.status, errText);
+    document.getElementById('deviceStatus').textContent =
+      res.status === 403 ? 'Playback failed — Spotify Premium is required.' :
+      res.status === 404 ? 'Playback failed — no active device found.' :
+      `Playback failed (status ${res.status}).`;
+    show('screen-scan');
+    return;
+  }
   document.getElementById('vinyl').classList.add('spinning');
   document.getElementById('playerStatus').textContent = 'Playing…';
   document.getElementById('btnToggle').textContent = 'Pause';
