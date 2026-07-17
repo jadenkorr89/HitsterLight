@@ -318,13 +318,17 @@ async function getValidToken(){
 let player = null;
 let deviceId = null;
 
+let resolveSdkReady;
+const sdkReady = new Promise(resolve => { resolveSdkReady = resolve; });
 window.onSpotifyWebPlaybackSDKReady = () => {
-  // Player is created once we have a token; see initPlayer()
+  resolveSdkReady();
 };
 
 async function initPlayer(){
   const token = await getValidToken();
   if(!token) return;
+
+  await sdkReady; // wait until the SDK script has actually finished loading
 
   player = new Spotify.Player({
     name: 'Vaktalálat Blind Spin',
