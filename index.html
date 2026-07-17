@@ -440,23 +440,28 @@ async function togglePlayback(){
 
 /* ---------------- QR scanning ---------------- */
 let html5QrCode = null;
+let scanHandled = false;
 
 function startScanner(){
   show('screen-scan');
+  scanHandled = false;
   html5QrCode = new Html5Qrcode('reader');
   html5QrCode.start(
     { facingMode: 'environment' },
     { fps: 10, qrbox: 220 },
     (decodedText) => {
+      if(scanHandled) return; // ignore extra decodes of the same/other frame while we're already handling one
       const dbg = document.getElementById('debugLine');
       if(dbg) dbg.textContent = 'debug: decoded "' + decodedText + '"';
       const trackId = extractTrackId(decodedText);
       if(trackId){
+        scanHandled = true;
         if(dbg) dbg.textContent = 'debug: matched track ' + trackId + ' — calling play…';
-        stopScanner();
-        playTrack(trackId).catch(err => {
-          if(dbg) dbg.textContent = 'debug: playTrack threw: ' + (err && err.message ? err.message : err);
-        });
+        stopScanner()
+          .then(() => playTrack(trackId))
+          .catch(err => {
+            if(dbg) dbg.textContent = 'debug: error: ' + (err && err.message ? err.message : err);
+          });
       } else {
         if(dbg) dbg.textContent = 'debug: decoded but no track id matched: "' + decodedText + '"';
       }
@@ -468,11 +473,19 @@ function startScanner(){
   });
 }
 
-function stopScanner(){
-  if(html5QrCode){
-    html5QrCode.stop().catch(()=>{});
-    html5QrCode.clear();
-    html5QrCode = null;
+async function stopScanner(){
+  if(!html5QrCode) return;
+  const instance = html5QrCode;
+  html5QrCode = null;
+  try {
+    await instance.stop(); // must resolve before clear() — clear() throws if scanning is still active
+  } catch(e) {
+    console.error('Scanner stop failed', e);
+  }
+  try {
+    instance.clear();
+  } catch(e) {
+    console.error('Scanner clear failed', e);
   }
 }
 
